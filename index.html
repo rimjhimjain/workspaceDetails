@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspra Stats Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0b0f;
+    --bg-surface: #12131a;
+    --bg-card: #181920;
+    --bg-card-hover: #1e1f28;
+    --border: #2a2b38;
+    --border-active: #3d3e50;
+    --text-primary: #e8e9f0;
+    --text-secondary: #8b8ca0;
+    --text-muted: #55566a;
+    --accent: #6ee7b7;
+    --accent-dim: rgba(110, 231, 183, 0.12);
+    --accent-glow: rgba(110, 231, 183, 0.25);
+    --red: #f87171;
+    --red-dim: rgba(248, 113, 113, 0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251, 191, 36, 0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96, 165, 250, 0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167, 139, 250, 0.12);
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(110, 231, 183, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110, 231, 183, 0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; padding: 24px 32px 48px; max-width: 1400px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 16px; }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #34d399);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700; font-size: 16px;
+    color: var(--bg-deep);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .header h1 {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .header h1 span { color: var(--text-muted); font-weight: 300; }
+
+  .workspace-name {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex; align-items: center; gap: 8px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .workspace-name.visible { opacity: 1; transform: translateY(0); }
+  .workspace-name .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* Controls */
+  .controls {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .controls-top {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.workspace-field { flex: 1; min-width: 240px; }
+
+  .field label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+
+  select, input[type="text"], input[type="date"] {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8ca0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  select:focus, input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  select option {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    padding: 8px;
+  }
+
+  input[type="date"] { width: 160px; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg-deep);
+  }
+  .btn-primary:hover { box-shadow: 0 0 24px var(--accent-glow); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--border-active); color: var(--text-primary); }
+  .btn-outline.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .btn-sm {
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--border);
+  }
+  .btn-danger:hover { border-color: var(--red); background: var(--red-dim); }
+
+  .actions { display: flex; gap: 10px; align-items: flex-end; margin-left: auto; }
+
+  /* Compare section */
+  .compare-section {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    animation: fadeIn 0.3s ease;
+  }
+
+  .compare-section.visible { display: block; }
+
+  .compare-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .compare-section-header .compare-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-dim);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .compare-entry {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.3s ease;
+  }
+
+  .compare-entry:last-of-type { border-bottom: none; }
+
+  .compare-entry .entry-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-deep);
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .compare-entry .field { flex: 1; min-width: 160px; }
+
+  /* Stats */
+  .stats-section { margin-bottom: 12px; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-label .ws-name {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .stat-card.visible { opacity: 1; transform: translateY(0); }
+
+  .stat-card:hover {
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .stat-card .icon-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    opacity: 0.7;
+  }
+
+  .stat-card .stat-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .stat-card .stat-value {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .stat-card .stat-sub {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  /* Multi-compare layout */
+  .compare-values {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .compare-col { flex: 1; min-width: 70px; }
+
+  .compare-col .period-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .compare-col .val {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1.1;
+  }
+
+  .compare-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .delta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-top: 8px;
+    margin-right: 4px;
+  }
+
+  .delta-badge.up { color: var(--accent); background: var(--accent-dim); }
+  .delta-badge.down { color: var(--red); background: var(--red-dim); }
+  .delta-badge.neutral { color: var(--text-muted); background: var(--bg-deep); }
+
+  .delta-badge svg { width: 10px; height: 10px; }
+
+  /* Empty / Loading */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .empty-state .empty-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 20px;
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 24px;
+  }
+
+  .empty-state p {
+    color: var(--text-muted);
+    font-size: 14px;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .empty-state p strong { color: var(--text-secondary); }
+
+  .loading-spinner {
+    display: none;
+    width: 20px; height: 20px;
+    border: 2px solid transparent;
+    border-top-color: var(--bg-deep);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  .error-toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    padding: 14px 20px;
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 100;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 400px;
+  }
+
+  .error-toast.visible { transform: translateY(0); opacity: 1; }
+
+  /* Pause badge */
+  .pause-badge {
+    font-size: 10px;
+    color: var(--amber);
+    margin-left: 4px;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .app { padding: 16px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .controls-top { flex-direction: column; align-items: stretch; }
+    .actions { margin-left: 0; }
+    .field.workspace-field { min-width: unset; }
+    .stat-card .stat-value { font-size: 26px; }
+    .compare-col .val { font-size: 18px; }
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark">IN</div>
+      <h1>stats <span>/ dashboard</span></h1>
+    </div>
+    <div class="workspace-name" id="workspaceBadge">
+      <span class="dot"></span>
+      <span id="workspaceLabel"></span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="controls-top">
+      <div class="field workspace-field">
+        <label>Workspace</label>
+        <select id="workspaceId">
+          <option value="Ak2kEdjE0zqt9WGcMDei">Inspra Sales - SME</option>
+          <option value="7stZUD7o2pOybcRjFM79">Imagine Kit Homes</option>
+          <option value="O859vmyP922RR5dIT7Ua">Marriott Lane</option>
+          <option value="OTJ9SoxjKDYUBTrJ7rV8">South Australian Footballar</option>
+          <option value="xq8kSUzvssCyyGM8hONt">New Edge Real Estate (paused)</option>
+          <option value="wLhryATCXLgOk1nz2JBv">Hebron Group</option>
+          <option value="qXGll7yrEEB85T40HsMx">Debt Buddy</option>
+          <option value="MafJz7i7fYMejyIrfooN">cPersonnel</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Start Date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label>End Date</label>
+        <input type="date" id="endDate">
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline" id="compareToggle" onclick="toggleCompare()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/></svg>
+          Compare
+        </button>
+        <button class="btn btn-primary" id="fetchBtn" onclick="fetchStats()">
+          <span class="loading-spinner" id="spinner"></span>
+          <span id="fetchLabel">Fetch</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="compare-section" id="compareSection">
+      <div class="compare-section-header">
+        <span class="compare-title">Compare Workspaces</span>
+        <button class="btn btn-outline btn-sm" onclick="addCompareEntry()">+ Add Workspace</button>
+      </div>
+      <div id="compareEntries"></div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="empty-state">
+      <div class="empty-icon">&#x2197;</div>
+      <p>Select a workspace and date range, then hit <strong>Fetch</strong> to load statistics.</p>
+    </div>
+  </div>
+</div>
+
+<div class="error-toast" id="errorToast"></div>
+
+<script>
+  const WORKSPACES = [
+    { id: 'Ak2kEdjE0zqt9WGcMDei', name: 'Inspra Sales - SME' },
+    { id: '7stZUD7o2pOybcRjFM79', name: 'Imagine Kit Homes' },
+    { id: 'O859vmyP922RR5dIT7Ua', name: 'Marriott Lane' },
+    { id: 'OTJ9SoxjKDYUBTrJ7rV8', name: 'South Australian Footballar' },
+    { id: 'xq8kSUzvssCyyGM8hONt', name: 'New Edge Real Estate', paused: true },
+    { id: 'wLhryATCXLgOk1nz2JBv', name: 'Hebron Group' },
+    { id: 'qXGll7yrEEB85T40HsMx', name: 'Debt Buddy' },
+    { id: 'MafJz7i7fYMejyIrfooN', name: 'cPersonnel' },
+  ];
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('startDate').value = today;
+  document.getElementById('endDate').value = today;
+
+  let compareMode = false;
+  let compareCounter = 0;
+
+  function getWorkspaceName(id) {
+    const ws = WORKSPACES.find(w => w.id === id);
+    return ws ? ws.name : id;
+  }
+
+  function buildWorkspaceOptions(selectedId) {
+    return WORKSPACES.map(w =>
+      `<option value="${w.id}" ${w.id === selectedId ? 'selected' : ''}>${w.name}${w.paused ? ' (paused)' : ''}</option>`
+    ).join('');
+  }
+
+  function toggleCompare() {
+    compareMode = !compareMode;
+    document.getElementById('compareToggle').classList.toggle('active', compareMode);
+    const section = document.getElementById('compareSection');
+    section.classList.toggle('visible', compareMode);
+    if (compareMode && document.getElementById('compareEntries').children.length === 0) {
+      addCompareEntry();
+    }
+  }
+
+  function addCompareEntry() {
+    compareCounter++;
+    const container = document.getElementById('compareEntries');
+    const div = document.createElement('div');
+    div.className = 'compare-entry';
+    div.id = `compare-${compareCounter}`;
+    const num = container.children.length + 1;
+    div.innerHTML = `
+      <span class="entry-num">${num}</span>
+      <div class="field" style="flex:1.5; min-width:200px">
+        <label>Workspace</label>
+        <select class="cmp-workspace">${buildWorkspaceOptions('')}</select>
+      </div>
+      <div class="field">
+        <label>Start Date</label>
+        <input type="date" class="cmp-start" value="${today}">
+      </div>
+      <div class="field">
+        <label>End Date</label>
+        <input type="date" class="cmp-end" value="${today}">
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeCompareEntry('compare-${compareCounter}')">Remove</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function removeCompareEntry(id) {
+    document.getElementById(id).remove();
+    // Re-number
+    const entries = document.getElementById('compareEntries').querySelectorAll('.compare-entry');
+    entries.forEach((e, i) => { e.querySelector('.entry-num').textContent = i + 1; });
+  }
+
+  async function apiCall(workspaceId, startDate, endDate) {
+    const url = `https://api.inspra.ai/workspace/${encodeURIComponent(workspaceId)}/stats?startDate=${startDate}&endDate=${endDate}`;
+    const res = await fetch(url, { headers: { 'x-api-key': 'insprapublickey' } });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  function showError(msg) {
+    const toast = document.getElementById('errorToast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 4000);
+  }
+
+  function formatNum(n) {
+    if (n === undefined || n === null) return '-';
+    if (typeof n === 'number' && !Number.isInteger(n)) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return n.toLocaleString();
+  }
+
+  const CARDS = [
+    { key: 'totalCalls',        label: 'Total Calls',    color: 'var(--accent)',  higherIsBetter: true },
+    { key: 'connectedCalls',    label: 'Connected',      color: 'var(--blue)',    higherIsBetter: true },
+    { key: 'notConnectedCalls', label: 'Not Connected',  color: 'var(--red)',     higherIsBetter: false },
+    { key: 'connectedPercentage', label: 'Connected %',  color: 'var(--purple)',  higherIsBetter: true, suffix: '%' },
+    { key: 'consumedMinutes',   label: 'Consumed Min',   color: 'var(--amber)',   higherIsBetter: null },
+    { key: 'appointmentBooked', label: 'Appointments',   color: 'var(--accent)',  higherIsBetter: true },
+  ];
+
+  const arrowUp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>`;
+  const arrowDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>`;
+
+  function renderSingle(data, wsName) {
+    const dateLabel = data.startDate === data.endDate ? data.startDate : `${data.startDate} &rarr; ${data.endDate}`;
+    let html = `<div class="stats-section"><div class="section-label"><span class="ws-name">${wsName}</span> &mdash; ${dateLabel}</div><div class="stats-grid">`;
+    CARDS.forEach((c, i) => {
+      const val = data[c.key];
+      html += `
+        <div class="stat-card" style="transition-delay:${i * 60}ms">
+          <div class="icon-bar" style="background:${c.color}"></div>
+          <div class="stat-label">${c.label}</div>
+          <div class="stat-value">${formatNum(val)}</div>
+          ${c.suffix && val != null ? `<div class="stat-sub">${c.suffix === '%' ? 'percent' : c.suffix}</div>` : ''}
+        </div>`;
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderMultiComparison(datasets) {
+    // datasets: [{wsName, startDate, endDate, data}, ...]
+    let html = `<div class="stats-section"><div class="section-label">Comparison across ${datasets.length} workspace${datasets.length > 1 ? 's' : ''}</div><div class="stats-grid">`;
+
+    CARDS.forEach((c, i) => {
+      html += `
+        <div class="stat-card" style="transition-delay:${i * 60}ms">
+          <div class="icon-bar" style="background:${c.color}"></div>
+          <div class="stat-label">${c.label}</div>
+          <div class="compare-values">`;
+
+      datasets.forEach((ds, j) => {
+        if (j > 0) html += `<div class="compare-divider"></div>`;
+        const shortName = ds.wsName.length > 14 ? ds.wsName.substring(0, 12) + '..' : ds.wsName;
+        html += `
+          <div class="compare-col">
+            <div class="period-tag" title="${ds.wsName} (${ds.startDate})">${shortName}</div>
+            <div class="val">${formatNum(ds.data[c.key])}</div>
+          </div>`;
+      });
+
+      html += `</div>`;
+
+      // Show deltas relative to the first dataset
+      if (datasets.length >= 2) {
+        html += `<div style="margin-top:8px">`;
+        const baseVal = datasets[0].data[c.key];
+        for (let j = 1; j < datasets.length; j++) {
+          const cmpVal = datasets[j].data[c.key];
+          if (baseVal != null && cmpVal != null) {
+            const delta = cmpVal - baseVal;
+            const pct = baseVal !== 0 ? ((delta / Math.abs(baseVal)) * 100) : (delta !== 0 ? 100 : 0);
+            let cls = 'neutral';
+            if (delta > 0) cls = c.higherIsBetter === false ? 'down' : 'up';
+            else if (delta < 0) cls = c.higherIsBetter === false ? 'up' : 'down';
+            html += `<div class="delta-badge ${cls}" title="vs ${datasets[0].wsName}">${delta > 0 ? arrowUp : delta < 0 ? arrowDown : ''}${delta > 0 ? '+' : ''}${formatNum(delta)} (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)</div>`;
+          }
+        }
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    html += '</div></div>';
+    return html;
+  }
+
+  async function fetchStats() {
+    const wid = document.getElementById('workspaceId').value;
+    const sd = document.getElementById('startDate').value;
+    const ed = document.getElementById('endDate').value;
+    if (!wid || !sd || !ed) { showError('Please fill in all fields'); return; }
+
+    const btn = document.getElementById('fetchBtn');
+    const spinner = document.getElementById('spinner');
+    const label = document.getElementById('fetchLabel');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    label.textContent = 'Loading';
+
+    try {
+      const wsName = getWorkspaceName(wid);
+
+      // Update workspace badge
+      const badge = document.getElementById('workspaceBadge');
+      document.getElementById('workspaceLabel').textContent = wsName;
+      badge.classList.add('visible');
+
+      if (compareMode) {
+        // Gather all comparison entries
+        const entries = document.getElementById('compareEntries').querySelectorAll('.compare-entry');
+        if (entries.length === 0) { showError('Add at least one comparison workspace'); return; }
+
+        // Build all requests: primary + comparison entries
+        const requests = [{ wid, sd, ed, wsName }];
+        entries.forEach(entry => {
+          const cWid = entry.querySelector('.cmp-workspace').value;
+          const cSd = entry.querySelector('.cmp-start').value;
+          const cEd = entry.querySelector('.cmp-end').value;
+          if (cWid && cSd && cEd) {
+            requests.push({ wid: cWid, sd: cSd, ed: cEd, wsName: getWorkspaceName(cWid) });
+          }
+        });
+
+        // Fetch all in parallel
+        const results = await Promise.all(
+          requests.map(async r => {
+            const data = await apiCall(r.wid, r.sd, r.ed);
+            return { wsName: data.workspaceName || r.wsName, startDate: r.sd, endDate: r.ed, data };
+          })
+        );
+
+        const content = document.getElementById('content');
+        content.innerHTML = renderMultiComparison(results);
+        revealCards(content);
+
+      } else {
+        const primary = await apiCall(wid, sd, ed);
+        primary.startDate = sd;
+        primary.endDate = ed;
+
+        const content = document.getElementById('content');
+        content.innerHTML = renderSingle(primary, primary.workspaceName || wsName);
+        revealCards(content);
+      }
+
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      label.textContent = 'Fetch';
+    }
+  }
+
+  function revealCards(container) {
+    requestAnimationFrame(() => {
+      container.querySelectorAll('.stat-card').forEach((card, i) => {
+        setTimeout(() => card.classList.add('visible'), i * 80);
+      });
+    });
+  }
+</script>
+</body>
+</html>
