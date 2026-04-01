@@ -524,8 +524,9 @@
     <div class="controls-top">
       <div class="field workspace-field">
         <label>Workspace</label>
-        <select id="workspaceId">
-          <option value="Ak2kEdjE0zqt9WGcMDei">Inspra Sales - SME</option>
+        <select id="workspaceId" onchange="onWorkspaceChange()">
+          <option value="__ALL_LIVE__">-- All Live Clients --</option>
+          <option value="Ak2kEdjE0zqt9WGcMDei" selected>Inspra Sales - SME</option>
           <option value="7stZUD7o2pOybcRjFM79">Imagine Kit Homes</option>
           <option value="O859vmyP922RR5dIT7Ua">Marriott Lane</option>
           <option value="OTJ9SoxjKDYUBTrJ7rV8">South Australian Footballar</option>
@@ -592,6 +593,19 @@
 
   let compareMode = false;
   let compareCounter = 0;
+
+  function onWorkspaceChange() {
+    const sel = document.getElementById('workspaceId');
+    if (sel.value === '__ALL_LIVE__') {
+      // Hide compare section — all-live mode replaces it
+      compareMode = false;
+      document.getElementById('compareToggle').classList.remove('active');
+      document.getElementById('compareSection').classList.remove('visible');
+      document.getElementById('compareToggle').style.display = 'none';
+    } else {
+      document.getElementById('compareToggle').style.display = '';
+    }
+  }
 
   function getWorkspaceName(id) {
     const ws = WORKSPACES.find(w => w.id === id);
@@ -751,7 +765,7 @@
     const wid = document.getElementById('workspaceId').value;
     const sd = document.getElementById('startDate').value;
     const ed = document.getElementById('endDate').value;
-    if (!wid || !sd || !ed) { showError('Please fill in all fields'); return; }
+    if (!sd || !ed) { showError('Please fill in date fields'); return; }
 
     const btn = document.getElementById('fetchBtn');
     const spinner = document.getElementById('spinner');
@@ -761,19 +775,50 @@
     label.textContent = 'Loading';
 
     try {
+      // ── All Live Clients mode ──
+      if (wid === '__ALL_LIVE__') {
+        const liveWorkspaces = WORKSPACES.filter(w => !w.paused);
+
+        const badge = document.getElementById('workspaceBadge');
+        document.getElementById('workspaceLabel').textContent = `All Live Clients (${liveWorkspaces.length})`;
+        badge.classList.add('visible');
+
+        const results = await Promise.allSettled(
+          liveWorkspaces.map(async ws => {
+            const data = await apiCall(ws.id, sd, ed);
+            return { wsName: data.workspaceName || ws.name, startDate: sd, endDate: ed, data };
+          })
+        );
+
+        const successResults = results
+          .filter(r => r.status === 'fulfilled')
+          .map(r => r.value);
+
+        const failedCount = results.filter(r => r.status === 'rejected').length;
+        if (failedCount > 0) showError(`${failedCount} workspace(s) failed to load`);
+
+        if (successResults.length === 0) {
+          showError('No workspace data could be loaded');
+          return;
+        }
+
+        const content = document.getElementById('content');
+        content.innerHTML = renderMultiComparison(successResults);
+        revealCards(content);
+        return;
+      }
+
+      // ── Single / Compare mode ──
       const wsName = getWorkspaceName(wid);
 
-      // Update workspace badge
       const badge = document.getElementById('workspaceBadge');
       document.getElementById('workspaceLabel').textContent = wsName;
       badge.classList.add('visible');
 
       if (compareMode) {
-        // Gather all comparison entries
         const entries = document.getElementById('compareEntries').querySelectorAll('.compare-entry');
         if (entries.length === 0) { showError('Add at least one comparison workspace'); return; }
 
-        // Build all requests: primary + comparison entries
         const requests = [{ wid, sd, ed, wsName }];
         entries.forEach(entry => {
           const cWid = entry.querySelector('.cmp-workspace').value;
@@ -784,7 +829,6 @@
           }
         });
 
-        // Fetch all in parallel
         const results = await Promise.all(
           requests.map(async r => {
             const data = await apiCall(r.wid, r.sd, r.ed);
