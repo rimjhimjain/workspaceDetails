@@ -174,7 +174,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
 .card-bottom .cb-val { font-family:var(--mono); font-size:14px; font-weight:600; margin-top:2px; }
 
 /* ── Table View ── */
-.tbl-wrap { display:none; overflow-x:auto; }
+.tbl-wrap { overflow-x:auto; }
 .tbl {
   width:100%; border-collapse:separate; border-spacing:0;
   font-size:13px;
@@ -246,7 +246,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
         <div class="hdr-sub" id="wsCount">Select dates and fetch</div>
       </div>
     </div>
-    <div class="hdr-live"><span class="dot"></span> Live</div>
+    <div style="text-align:right">
+      <div class="hdr-live"><span class="dot"></span> Live</div>
+      <div id="lastFetch" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+    </div>
   </div>
 
   <!-- Controls -->
@@ -293,7 +296,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
   <div class="grid" id="gridView"></div>
 
   <!-- Table -->
-  <div class="tbl-wrap" id="tableView">
+  <div class="tbl-wrap" id="tableView" style="display:none">
     <table class="tbl">
       <thead>
         <tr>
@@ -446,6 +449,7 @@ async function fetchAll() {
     if (failCount) showError(`${failCount} workspace(s) failed`);
 
     document.getElementById('wsCount').textContent = `${wsData.length} of ${WORKSPACES.filter(w=>!w.paused).length} workspaces`;
+    document.getElementById('lastFetch').textContent = `Last fetch: ${new Date().toLocaleTimeString()}`;
     renderSummary();
     renderView();
     document.getElementById('emptyState').style.display = 'none';
@@ -557,8 +561,8 @@ function setView(v) {
   currentView = v;
   document.getElementById('vGrid').classList.toggle('active', v === 'grid');
   document.getElementById('vTable').classList.toggle('active', v === 'table');
-  document.getElementById('gridView').style.display = v === 'grid' ? '' : 'none';
-  document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('gridView').style.display = v === 'grid' ? 'grid' : 'none';
+  document.getElementById('tableView').style.display = v === 'table' ? 'block' : 'none';
 }
 
 function sortTable(col) {
