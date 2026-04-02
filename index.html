@@ -3,886 +3,574 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inspra Stats Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Client Connectivity Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg-deep: #f8f9fc;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
-    --bg-card-hover: #f1f5f9;
-    --border: #e2e8f0;
-    --border-active: #cbd5e1;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    --accent: #0ea5e9;
-    --accent-dim: rgba(14, 165, 233, 0.08);
-    --accent-glow: rgba(14, 165, 233, 0.15);
-    --accent-dark: #0284c7;
-    --red: #ef4444;
-    --red-dim: rgba(239, 68, 68, 0.08);
-    --green: #10b981;
-    --green-dim: rgba(16, 185, 129, 0.08);
-    --amber: #f59e0b;
-    --amber-dim: rgba(245, 158, 11, 0.08);
-    --blue: #3b82f6;
-    --blue-dim: rgba(59, 130, 246, 0.08);
-    --purple: #8b5cf6;
-    --purple-dim: rgba(139, 92, 246, 0.08);
-    --font-mono: 'Space Grotesk', sans-serif;
-    --font-sans: 'Inter', sans-serif;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
-    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
-    --shadow-xl: 0 20px 40px rgba(0,0,0,0.1);
-  }
-
-  body {
-    background: var(--bg-deep);
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: radial-gradient(circle at 30% 20%, rgba(14,165,233,0.04) 0%, transparent 50%),
-                radial-gradient(circle at 70% 80%, rgba(139,92,246,0.03) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .app { position: relative; z-index: 1; padding: 28px 36px 48px; max-width: 1400px; margin: 0 auto; }
-
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .header-left { display: flex; align-items: center; gap: 14px; }
-
-  .logo-mark {
-    width: 38px; height: 38px;
-    background: linear-gradient(135deg, var(--accent), #6366f1);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-mono);
-    font-weight: 700; font-size: 15px;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(14,165,233,0.3);
-  }
-
-  .header h1 {
-    font-family: var(--font-mono);
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-  }
-
-  .header h1 span { color: var(--text-muted); font-weight: 400; }
-
-  .workspace-name {
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    padding: 7px 16px;
-    border-radius: 20px;
-    display: flex; align-items: center; gap: 8px;
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .workspace-name.visible { opacity: 1; transform: translateY(0); }
-  .workspace-name .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
-
-  /* Controls */
-  .controls {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 22px 26px;
-    margin-bottom: 28px;
-    box-shadow: var(--shadow-md);
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .controls-top {
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field.workspace-field { flex: 1; min-width: 240px; }
-
-  .field label {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-  }
-
-  select, input[type="text"], input[type="date"] {
-    background: var(--bg-deep);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    appearance: none;
-    -webkit-appearance: none;
-  }
-
-  select {
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 34px;
-  }
-
-  select:focus, input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-dim);
-  }
-
-  select option {
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    padding: 8px;
-  }
-
-  input[type="date"] { width: 165px; }
-  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; }
-
-  .btn {
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 22px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex; align-items: center; gap: 8px;
-    white-space: nowrap;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #6366f1);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(14,165,233,0.25);
-  }
-  .btn-primary:hover { box-shadow: 0 4px 20px rgba(14,165,233,0.35); transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border);
-  }
-  .btn-outline:hover { border-color: var(--border-active); color: var(--text-primary); background: var(--bg-deep); }
-  .btn-outline.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-dim);
-  }
-
-  .btn-sm {
-    font-size: 11px;
-    padding: 6px 12px;
-    border-radius: 8px;
-  }
-
-  .btn-danger {
-    background: transparent;
-    color: var(--red);
-    border: 1px solid var(--border);
-  }
-  .btn-danger:hover { border-color: var(--red); background: var(--red-dim); }
-
-  .actions { display: flex; gap: 10px; align-items: flex-end; margin-left: auto; }
-
-  /* Compare section */
-  .compare-section {
-    display: none;
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border);
-    animation: fadeIn 0.3s ease;
-  }
-
-  .compare-section.visible { display: block; }
-
-  .compare-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  .compare-section-header .compare-title {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    color: var(--amber);
-    background: var(--amber-dim);
-    padding: 4px 12px;
-    border-radius: 6px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-
-  .compare-entry {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    animation: fadeIn 0.3s ease;
-  }
-
-  .compare-entry:last-of-type { border-bottom: none; }
-
-  .compare-entry .entry-num {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--bg-deep);
-    width: 26px; height: 26px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 8px;
-    flex-shrink: 0;
-    align-self: center;
-  }
-
-  .compare-entry .field { flex: 1; min-width: 160px; }
-
-  /* Stats */
-  .stats-section { margin-bottom: 12px; }
-
-  .section-label {
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-    display: flex; align-items: center; gap: 12px;
-  }
-
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .section-label .ws-name {
-    color: var(--text-secondary);
-    font-weight: 600;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .stat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px 24px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    opacity: 0;
-    transform: translateY(12px);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .stat-card.visible { opacity: 1; transform: translateY(0); }
-
-  .stat-card:hover {
-    border-color: var(--border-active);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .stat-card .icon-bar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 14px 14px 0 0;
-  }
-
-  .stat-card .stat-label {
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-  }
-
-  .stat-card .stat-value {
-    font-family: var(--font-mono);
-    font-size: 34px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--text-primary);
-    line-height: 1;
-  }
-
-  .stat-card .stat-sub {
-    font-family: var(--font-sans);
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 8px;
-  }
-
-  /* Multi-compare layout */
-  .compare-values {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-  }
-
-  .compare-col { flex: 1; min-width: 70px; }
-
-  .compare-col .period-tag {
-    font-family: var(--font-sans);
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .compare-col .val {
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--text-primary);
-    line-height: 1.1;
-  }
-
-  .compare-divider {
-    width: 1px;
-    height: 40px;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
-  .delta-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--font-sans);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 8px;
-    margin-top: 10px;
-    margin-right: 4px;
-  }
-
-  .delta-badge.up { color: var(--green); background: var(--green-dim); }
-  .delta-badge.down { color: var(--red); background: var(--red-dim); }
-  .delta-badge.neutral { color: var(--text-muted); background: var(--bg-deep); }
-
-  .delta-badge svg { width: 10px; height: 10px; }
-
-  /* Empty / Loading */
-  .empty-state {
-    text-align: center;
-    padding: 80px 20px;
-    animation: fadeIn 0.5s ease;
-  }
-
-  .empty-state .empty-icon {
-    width: 72px; height: 72px;
-    margin: 0 auto 20px;
-    border: 2px dashed var(--border);
-    border-radius: 18px;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted);
-    font-size: 28px;
-    background: var(--bg-surface);
-  }
-
-  .empty-state p {
-    color: var(--text-muted);
-    font-size: 14px;
-    max-width: 340px;
-    margin: 0 auto;
-    line-height: 1.7;
-  }
-
-  .empty-state p strong { color: var(--text-secondary); }
-
-  .loading-spinner {
-    display: none;
-    width: 20px; height: 20px;
-    border: 2px solid transparent;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-
-  .error-toast {
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    background: var(--bg-surface);
-    border: 1px solid var(--red);
-    border-radius: 12px;
-    padding: 14px 20px;
-    color: var(--red);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
-    box-shadow: var(--shadow-xl);
-    z-index: 100;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    max-width: 400px;
-  }
-
-  .error-toast.visible { transform: translateY(0); opacity: 1; }
-
-  .pause-badge {
-    font-size: 10px;
-    color: var(--amber);
-    margin-left: 4px;
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @media (max-width: 768px) {
-    .app { padding: 16px; }
-    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .controls-top { flex-direction: column; align-items: stretch; }
-    .actions { margin-left: 0; }
-    .field.workspace-field { min-width: unset; }
-    .stat-card .stat-value { font-size: 26px; }
-    .compare-col .val { font-size: 18px; }
-    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-  }
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #121318;
+  --bg2: #1a1b23;
+  --bg3: #22232e;
+  --bg4: #2a2b38;
+  --border: #2e2f3e;
+  --text: #e4e5ed;
+  --text2: #9496a8;
+  --text3: #5d5f73;
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.12);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --purple: #7c5cfc;
+  --purple-dim: rgba(124,92,252,0.15);
+  --amber: #fbbf24;
+  --blue: #60a5fa;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; }
+
+.app { max-width:1100px; margin:0 auto; padding:28px 32px 60px; }
+
+/* ── Header ── */
+.hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+.hdr-left { display:flex; align-items:center; gap:14px; }
+.hdr-avatar { width:40px; height:40px; border-radius:12px; background:var(--purple); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; color:#fff; }
+.hdr-title { font-size:18px; font-weight:700; }
+.hdr-sub { font-size:13px; color:var(--text2); margin-top:1px; }
+.hdr-live { display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text2); font-weight:500; }
+.hdr-live .dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Controls ── */
+.ctrls { display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; margin-bottom:24px; }
+.ctrls .field { display:flex; flex-direction:column; gap:5px; }
+.ctrls label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text3); }
+.ctrls input[type="date"] {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:10px 14px; color:var(--text); font-family:var(--font); font-size:13px;
+  outline:none; width:165px;
+}
+.ctrls input[type="date"]:focus { border-color:var(--purple); }
+.ctrls input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(.6); cursor:pointer; }
+
+.btn-fetch {
+  background:var(--purple); color:#fff; border:none; border-radius:10px;
+  padding:10px 28px; font-size:14px; font-weight:600; cursor:pointer;
+  font-family:var(--font); transition:all .2s;
+}
+.btn-fetch:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.btn-fetch:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+.presets { display:flex; gap:0; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-left:8px; }
+.presets button {
+  background:transparent; color:var(--text2); border:none; padding:10px 16px;
+  font-size:13px; font-weight:500; cursor:pointer; font-family:var(--font);
+  border-right:1px solid var(--border); transition:all .15s;
+}
+.presets button:last-child { border-right:none; }
+.presets button:hover { color:var(--text); background:var(--bg3); }
+.presets button.active { background:var(--purple-dim); color:#fff; }
+
+/* ── Workspace Selector ── */
+.ws-selector { margin-bottom:20px; position:relative; display:inline-block; }
+.ws-toggle {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:9px 16px; font-size:13px; color:var(--text2); cursor:pointer;
+  font-family:var(--font); display:flex; align-items:center; gap:8px;
+}
+.ws-toggle:hover { border-color:var(--text3); }
+.ws-dropdown {
+  display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:50;
+  background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+  padding:8px; min-width:280px; box-shadow:0 12px 40px rgba(0,0,0,.4);
+}
+.ws-dropdown.open { display:block; }
+.ws-dropdown label {
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;
+  cursor:pointer; font-size:13px; color:var(--text); transition:background .15s;
+  text-transform:none; letter-spacing:0;
+}
+.ws-dropdown label:hover { background:var(--bg3); }
+.ws-dropdown input[type="checkbox"] { accent-color:var(--purple); width:16px; height:16px; cursor:pointer; }
+.ws-dropdown .paused-tag { font-size:10px; color:var(--amber); margin-left:4px; }
+
+/* ── Summary Cards ── */
+.summary { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+.sum-card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+  padding:14px 18px; display:flex; align-items:center; gap:12px; min-width:140px;
+}
+.sum-card .sc-icon { font-size:20px; }
+.sum-card .sc-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); }
+.sum-card .sc-val { font-family:var(--mono); font-size:20px; font-weight:700; margin-top:2px; }
+
+/* ── Filter + View Toggle ── */
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:12px; flex-wrap:wrap; }
+.filter-input {
+  background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+  padding:9px 14px 9px 36px; color:var(--text); font-size:13px; font-family:var(--font);
+  outline:none; width:260px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d5f73' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:12px center;
+}
+.filter-input:focus { border-color:var(--purple); }
+
+.view-toggle { display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.view-toggle button {
+  background:transparent; color:var(--text2); border:none; padding:8px 18px;
+  font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font);
+  text-transform:uppercase; letter-spacing:.05em; transition:all .15s;
+}
+.view-toggle button.active { background:var(--purple-dim); color:#fff; }
+
+/* ── Grid View ── */
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(310px,1fr)); gap:16px; }
+
+.ws-card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:14px;
+  padding:20px; position:relative; transition:all .2s; animation:fadeUp .4s ease both;
+}
+.ws-card:hover { border-color:var(--text3); }
+
+.ws-card .card-close {
+  position:absolute; top:12px; right:14px; background:none; border:none;
+  color:var(--text3); font-size:14px; cursor:pointer; padding:4px;
+  line-height:1; transition:color .15s;
+}
+.ws-card .card-close:hover { color:var(--red); }
+
+.card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.card-info .card-name { font-size:14px; font-weight:600; }
+.card-info .card-sub { font-size:12px; color:var(--text3); margin-top:2px; }
+
+/* Donut chart (SVG) */
+.donut-wrap { width:56px; height:56px; position:relative; }
+.donut-wrap svg { width:56px; height:56px; transform:rotate(-90deg); }
+.donut-wrap circle { fill:none; stroke-width:5; }
+.donut-wrap .donut-bg { stroke:var(--bg4); }
+.donut-wrap .donut-fg { stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
+.donut-pct {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; font-family:var(--mono);
+}
+
+.card-stats { display:grid; grid-template-columns:1fr 1fr; gap:4px 20px; margin-bottom:12px; }
+.card-stats .cs-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); }
+.card-stats .cs-val { font-family:var(--mono); font-size:18px; font-weight:700; }
+.card-stats .cs-val.green { color:var(--green); }
+.card-stats .cs-val.red { color:var(--red); }
+
+.card-bar { width:100%; height:4px; background:var(--bg4); border-radius:2px; margin-bottom:14px; overflow:hidden; }
+.card-bar-fill { height:100%; border-radius:2px; transition:width .6s ease; }
+
+.card-bottom {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px;
+  padding-top:12px; border-top:1px solid var(--border);
+}
+.card-bottom .cb-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); }
+.card-bottom .cb-val { font-family:var(--mono); font-size:14px; font-weight:600; margin-top:2px; }
+
+/* ── Table View ── */
+.tbl-wrap { display:none; overflow-x:auto; }
+.tbl {
+  width:100%; border-collapse:separate; border-spacing:0;
+  font-size:13px;
+}
+.tbl th {
+  text-align:left; padding:10px 14px; font-size:10px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.07em; color:var(--text3);
+  border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+  white-space:nowrap;
+}
+.tbl th:hover { color:var(--text2); }
+.tbl th.num { text-align:right; }
+.tbl td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl td.num { text-align:right; font-family:var(--mono); font-weight:600; }
+.tbl td.green { color:var(--green); }
+.tbl td.red { color:var(--red); }
+.tbl tr { transition:background .15s; animation:fadeUp .3s ease both; }
+.tbl tbody tr:hover { background:var(--bg3); }
+
+.tbl .ws-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:10px; }
+.tbl .ws-name-cell { font-weight:500; }
+
+.tbl .rate-bar { display:inline-flex; align-items:center; gap:8px; }
+.tbl .rate-track { width:50px; height:4px; background:var(--bg4); border-radius:2px; overflow:hidden; }
+.tbl .rate-fill { height:100%; border-radius:2px; }
+
+.tbl .remove-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; padding:2px 6px; }
+.tbl .remove-btn:hover { color:var(--red); }
+
+/* ── States ── */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text3); font-size:14px; }
+.loading-overlay {
+  display:none; position:fixed; inset:0; background:rgba(18,19,24,.6); z-index:100;
+  align-items:center; justify-content:center;
+}
+.loading-overlay.active { display:flex; }
+.spinner { width:36px; height:36px; border:3px solid var(--bg4); border-top-color:var(--purple); border-radius:50%; animation:spin .6s linear infinite; }
+
+.error-toast {
+  position:fixed; bottom:28px; right:28px; background:var(--bg2); border:1px solid var(--red);
+  border-radius:10px; padding:12px 18px; color:var(--red); font-size:13px; font-weight:500;
+  box-shadow:0 8px 30px rgba(0,0,0,.4); z-index:200; transform:translateY(20px);
+  opacity:0; transition:all .3s cubic-bezier(.16,1,.3,1); max-width:380px;
+}
+.error-toast.visible { transform:translateY(0); opacity:1; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+@media(max-width:768px) {
+  .app { padding:16px; }
+  .ctrls { flex-direction:column; align-items:stretch; }
+  .grid { grid-template-columns:1fr; }
+  .summary { flex-direction:column; }
+  .toolbar { flex-direction:column; align-items:stretch; }
+  .filter-input { width:100%; }
+}
 </style>
 </head>
 <body>
 
 <div class="app">
-  <header class="header">
-    <div class="header-left">
-      <div class="logo-mark">IN</div>
-      <h1>stats <span>/ dashboard</span></h1>
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-avatar">G</div>
+      <div>
+        <div class="hdr-title">Client Connectivity</div>
+        <div class="hdr-sub" id="wsCount">Select dates and fetch</div>
+      </div>
     </div>
-    <div class="workspace-name" id="workspaceBadge">
-      <span class="dot"></span>
-      <span id="workspaceLabel"></span>
-    </div>
-  </header>
+    <div class="hdr-live"><span class="dot"></span> Live</div>
+  </div>
 
-  <div class="controls">
-    <div class="controls-top">
-      <div class="field workspace-field">
-        <label>Workspace</label>
-        <select id="workspaceId" onchange="onWorkspaceChange()">
-          <option value="__ALL_LIVE__">-- All Live Clients --</option>
-          <option value="Ak2kEdjE0zqt9WGcMDei" selected>Inspra Sales - SME</option>
-          <option value="7stZUD7o2pOybcRjFM79">Imagine Kit Homes</option>
-          <option value="O859vmyP922RR5dIT7Ua">Marriott Lane</option>
-          <option value="OTJ9SoxjKDYUBTrJ7rV8">South Australian Footballar</option>
-          <option value="xq8kSUzvssCyyGM8hONt">New Edge Real Estate (paused)</option>
-          <option value="wLhryATCXLgOk1nz2JBv">Hebron Group</option>
-          <option value="qXGll7yrEEB85T40HsMx">Debt Buddy</option>
-          <option value="MafJz7i7fYMejyIrfooN">cPersonnel</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Start Date</label>
-        <input type="date" id="startDate">
-      </div>
-      <div class="field">
-        <label>End Date</label>
-        <input type="date" id="endDate">
-      </div>
-      <div class="actions">
-        <button class="btn btn-outline" id="compareToggle" onclick="toggleCompare()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3l4 4-4 4"/><path d="M20 7H4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/></svg>
-          Compare
-        </button>
-        <button class="btn btn-primary" id="fetchBtn" onclick="fetchStats()">
-          <span class="loading-spinner" id="spinner"></span>
-          <span id="fetchLabel">Fetch</span>
-        </button>
-      </div>
+  <!-- Controls -->
+  <div class="ctrls">
+    <div class="field">
+      <label>Start Date</label>
+      <input type="date" id="startDate">
     </div>
-
-    <div class="compare-section" id="compareSection">
-      <div class="compare-section-header">
-        <span class="compare-title">Compare Workspaces</span>
-        <button class="btn btn-outline btn-sm" onclick="addCompareEntry()">+ Add Workspace</button>
-      </div>
-      <div id="compareEntries"></div>
+    <div class="field">
+      <label>End Date</label>
+      <input type="date" id="endDate">
+    </div>
+    <button class="btn-fetch" id="fetchBtn" onclick="fetchAll()">Fetch</button>
+    <div class="presets">
+      <button onclick="setPreset('today')" id="p-today" class="active">Today</button>
+      <button onclick="setPreset('7d')" id="p-7d">7d</button>
+      <button onclick="setPreset('14d')" id="p-14d">14d</button>
+      <button onclick="setPreset('30d')" id="p-30d">30d</button>
     </div>
   </div>
 
-  <div id="content">
-    <div class="empty-state">
-      <div class="empty-icon">&#x2197;</div>
-      <p>Select a workspace and date range, then hit <strong>Fetch</strong> to load statistics.</p>
+  <!-- Workspace Selector -->
+  <div class="ws-selector">
+    <button class="ws-toggle" onclick="toggleWsDropdown()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Workspaces
+    </button>
+    <div class="ws-dropdown" id="wsDropdown"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary" id="summary" style="display:none"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar" style="display:none">
+    <input type="text" class="filter-input" id="filterInput" placeholder="Filter workspaces..." oninput="applyFilter()">
+    <div class="view-toggle">
+      <button class="active" id="vGrid" onclick="setView('grid')">Grid</button>
+      <button id="vTable" onclick="setView('table')">Table</button>
     </div>
   </div>
+
+  <!-- Grid -->
+  <div class="grid" id="gridView"></div>
+
+  <!-- Table -->
+  <div class="tbl-wrap" id="tableView">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:30px"></th>
+          <th onclick="sortTable('name')">Workspace</th>
+          <th class="num" onclick="sortTable('total')">Total <span id="sort-arrow"></span></th>
+          <th class="num" onclick="sortTable('connected')">Connected</th>
+          <th class="num" onclick="sortTable('failed')">Failed</th>
+          <th onclick="sortTable('rate')">Rate</th>
+          <th class="num" onclick="sortTable('minutes')">Minutes</th>
+          <th class="num" onclick="sortTable('appts')">Appts</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" id="emptyState">Select dates and click <strong>Fetch</strong> to load data.</div>
 </div>
 
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
 <div class="error-toast" id="errorToast"></div>
 
 <script>
-  const WORKSPACES = [
-    { id: 'Ak2kEdjE0zqt9WGcMDei', name: 'Inspra Sales - SME' },
-    { id: '7stZUD7o2pOybcRjFM79', name: 'Imagine Kit Homes' },
-    { id: 'O859vmyP922RR5dIT7Ua', name: 'Marriott Lane' },
-    { id: 'OTJ9SoxjKDYUBTrJ7rV8', name: 'South Australian Footballar' },
-    { id: 'xq8kSUzvssCyyGM8hONt', name: 'New Edge Real Estate', paused: true },
-    { id: 'wLhryATCXLgOk1nz2JBv', name: 'Hebron Group' },
-    { id: 'qXGll7yrEEB85T40HsMx', name: 'Debt Buddy' },
-    { id: 'MafJz7i7fYMejyIrfooN', name: 'cPersonnel' },
-  ];
+const WORKSPACES = [
+  { id:'Ak2kEdjE0zqt9WGcMDei', name:'Inspra Sales - SME' },
+  { id:'OTJ9SoxjKDYUBTrJ7rV8', name:'The South Au.' },
+  { id:'qXGll7yrEEB85T40HsMx', name:'Debt Buddy' },
+  { id:'O859vmyP922RR5dIT7Ua', name:'Marriott Landing' },
+  { id:'wLhryATCXLgOk1nz2JBv', name:'Hebron' },
+  { id:'7stZUD7o2pOybcRjFM79', name:'Imagine Kit' },
+  { id:'MafJz7i7fYMejyIrfooN', name:'CPersonnel' },
+  { id:'xq8kSUzvssCyyGM8hONt', name:'New Edge Real Estate', paused:true },
+];
 
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('startDate').value = today;
-  document.getElementById('endDate').value = today;
+let selectedWs = new Set(WORKSPACES.filter(w => !w.paused).map(w => w.id));
+let wsData = [];
+let currentView = 'grid';
+let sortCol = 'total';
+let sortAsc = false;
+let filterText = '';
 
-  let compareMode = false;
-  let compareCounter = 0;
+// Init dates
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('startDate').value = today;
+document.getElementById('endDate').value = today;
 
-  function onWorkspaceChange() {
-    const sel = document.getElementById('workspaceId');
-    if (sel.value === '__ALL_LIVE__') {
-      // Hide compare section — all-live mode replaces it
-      compareMode = false;
-      document.getElementById('compareToggle').classList.remove('active');
-      document.getElementById('compareSection').classList.remove('visible');
-      document.getElementById('compareToggle').style.display = 'none';
-    } else {
-      document.getElementById('compareToggle').style.display = '';
-    }
-  }
+// Build workspace dropdown
+(function buildDropdown() {
+  const dd = document.getElementById('wsDropdown');
+  dd.innerHTML = WORKSPACES.map(w => `
+    <label>
+      <input type="checkbox" value="${w.id}" ${selectedWs.has(w.id) ? 'checked' : ''} onchange="toggleWs('${w.id}', this.checked)">
+      ${w.name}${w.paused ? '<span class="paused-tag">paused</span>' : ''}
+    </label>
+  `).join('');
+})();
 
-  function getWorkspaceName(id) {
-    const ws = WORKSPACES.find(w => w.id === id);
-    return ws ? ws.name : id;
-  }
+function toggleWsDropdown() {
+  document.getElementById('wsDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ws-selector')) document.getElementById('wsDropdown').classList.remove('open');
+});
 
-  function buildWorkspaceOptions(selectedId) {
-    return WORKSPACES.map(w =>
-      `<option value="${w.id}" ${w.id === selectedId ? 'selected' : ''}>${w.name}${w.paused ? ' (paused)' : ''}</option>`
-    ).join('');
-  }
+function toggleWs(id, checked) {
+  if (checked) selectedWs.add(id); else selectedWs.delete(id);
+}
 
-  function toggleCompare() {
-    compareMode = !compareMode;
-    document.getElementById('compareToggle').classList.toggle('active', compareMode);
-    const section = document.getElementById('compareSection');
-    section.classList.toggle('visible', compareMode);
-    if (compareMode && document.getElementById('compareEntries').children.length === 0) {
-      addCompareEntry();
-    }
-  }
+function setPreset(p) {
+  document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+  document.getElementById('p-'+p).classList.add('active');
+  const end = new Date();
+  let start = new Date();
+  if (p === 'today') { /* same day */ }
+  else if (p === '7d') start.setDate(end.getDate() - 6);
+  else if (p === '14d') start.setDate(end.getDate() - 13);
+  else if (p === '30d') start.setDate(end.getDate() - 29);
+  document.getElementById('startDate').value = start.toISOString().split('T')[0];
+  document.getElementById('endDate').value = end.toISOString().split('T')[0];
+}
 
-  function addCompareEntry() {
-    compareCounter++;
-    const container = document.getElementById('compareEntries');
-    const div = document.createElement('div');
-    div.className = 'compare-entry';
-    div.id = `compare-${compareCounter}`;
-    const num = container.children.length + 1;
-    div.innerHTML = `
-      <span class="entry-num">${num}</span>
-      <div class="field" style="flex:1.5; min-width:200px">
-        <label>Workspace</label>
-        <select class="cmp-workspace">${buildWorkspaceOptions('')}</select>
+function fmt(n) {
+  if (n == null) return '-';
+  if (n >= 1000) return (n/1000).toFixed(1)+'k';
+  return typeof n === 'number' && !Number.isInteger(n) ? n.toFixed(1) : n.toLocaleString();
+}
+function fmtFull(n) { return n == null ? '0' : n.toLocaleString(); }
+
+async function apiCall(wid, sd, ed) {
+  const r = await fetch(`https://api.inspra.ai/workspace/${encodeURIComponent(wid)}/stats?startDate=${sd}&endDate=${ed}`, { headers:{'x-api-key':'insprapublickey'} });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail||'Failed'); }
+  return r.json();
+}
+
+function showError(m) {
+  const t = document.getElementById('errorToast');
+  t.textContent = m; t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 4000);
+}
+
+function getDonutColor(pct) {
+  if (pct >= 30) return 'var(--green)';
+  if (pct >= 10) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function getBarColor(pct) {
+  if (pct >= 30) return 'var(--green)';
+  if (pct >= 10) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function getDotColor(pct) {
+  if (pct >= 30) return 'var(--green)';
+  if (pct >= 10) return '#f59e0b';
+  if (pct > 0) return 'var(--red)';
+  return 'var(--text3)';
+}
+
+async function fetchAll() {
+  const sd = document.getElementById('startDate').value;
+  const ed = document.getElementById('endDate').value;
+  if (!sd || !ed) { showError('Select dates'); return; }
+
+  const ids = [...selectedWs];
+  if (ids.length === 0) { showError('Select at least one workspace'); return; }
+
+  const btn = document.getElementById('fetchBtn');
+  const overlay = document.getElementById('loadingOverlay');
+  btn.disabled = true; overlay.classList.add('active');
+
+  try {
+    const results = await Promise.allSettled(
+      ids.map(async id => {
+        const ws = WORKSPACES.find(w => w.id === id);
+        const data = await apiCall(id, sd, ed);
+        const avgPerCall = data.connectedCalls > 0 ? (data.consumedMinutes / data.connectedCalls).toFixed(1) : '-';
+        return {
+          id, name: data.workspaceName || ws.name,
+          total: data.totalCalls, connected: data.connectedCalls,
+          failed: data.notConnectedCalls, rate: data.connectedPercentage,
+          minutes: data.consumedMinutes, appts: data.appointmentBooked, avgPerCall
+        };
+      })
+    );
+
+    wsData = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const failCount = results.filter(r => r.status === 'rejected').length;
+    if (failCount) showError(`${failCount} workspace(s) failed`);
+
+    document.getElementById('wsCount').textContent = `${wsData.length} of ${WORKSPACES.filter(w=>!w.paused).length} workspaces`;
+    renderSummary();
+    renderView();
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('summary').style.display = '';
+
+  } catch(e) { showError(e.message); }
+  finally { btn.disabled = false; overlay.classList.remove('active'); }
+}
+
+function renderSummary() {
+  const s = wsData.reduce((a, d) => {
+    a.total += d.total; a.conn += d.connected; a.fail += d.failed;
+    a.min += d.minutes; a.appts += d.appts; return a;
+  }, { total:0, conn:0, fail:0, min:0, appts:0 });
+  const avgRate = s.total > 0 ? ((s.conn / s.total) * 100).toFixed(1) : '0.0';
+  const hrs = (s.min / 60).toFixed(1);
+
+  document.getElementById('summary').innerHTML = `
+    <div class="sum-card"><div class="sc-icon">📞</div><div><div class="sc-label">Total Calls</div><div class="sc-val">${fmt(s.total)}</div></div></div>
+    <div class="sum-card"><div class="sc-icon">✅</div><div><div class="sc-label">Connected</div><div class="sc-val">${fmt(s.conn)}</div></div></div>
+    <div class="sum-card"><div class="sc-icon">❌</div><div><div class="sc-label">Failed</div><div class="sc-val">${fmt(s.fail)}</div></div></div>
+    <div class="sum-card"><div class="sc-icon">📊</div><div><div class="sc-label">Avg Connect</div><div class="sc-val">${avgRate}%</div></div></div>
+    <div class="sum-card"><div class="sc-icon">⏱</div><div><div class="sc-label">Minutes</div><div class="sc-val">${hrs}h</div></div></div>
+    <div class="sum-card"><div class="sc-icon">📅</div><div><div class="sc-label">Appointments</div><div class="sc-val">${s.appts}</div></div></div>
+  `;
+}
+
+function removeWs(id) {
+  wsData = wsData.filter(d => d.id !== id);
+  renderSummary();
+  renderView();
+}
+
+function getFiltered() {
+  let d = [...wsData];
+  if (filterText) d = d.filter(w => w.name.toLowerCase().includes(filterText));
+  d.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === 'name') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  return d;
+}
+
+function renderView() {
+  const data = getFiltered();
+  renderGrid(data);
+  renderTable(data);
+}
+
+function renderGrid(data) {
+  const g = document.getElementById('gridView');
+  const circ = 2 * Math.PI * 22; // r=22
+  g.innerHTML = data.map((d, i) => {
+    const pct = d.rate || 0;
+    const offset = circ - (circ * pct / 100);
+    const color = getDonutColor(pct);
+    const barColor = getBarColor(pct);
+    return `
+    <div class="ws-card" style="animation-delay:${i*50}ms">
+      <button class="card-close" onclick="removeWs('${d.id}')">&times;</button>
+      <div class="card-top">
+        <div class="card-info">
+          <div class="card-name">${d.name}</div>
+          <div class="card-sub">${fmtFull(d.total)} total calls</div>
+        </div>
+        <div class="donut-wrap">
+          <svg viewBox="0 0 50 50"><circle class="donut-bg" cx="25" cy="25" r="22"/><circle class="donut-fg" cx="25" cy="25" r="22" stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg>
+          <div class="donut-pct" style="color:${color}">${Math.round(pct)}%</div>
+        </div>
       </div>
-      <div class="field">
-        <label>Start Date</label>
-        <input type="date" class="cmp-start" value="${today}">
+      <div class="card-stats">
+        <div><div class="cs-label">Connected</div><div class="cs-val green">${fmtFull(d.connected)}</div></div>
+        <div><div class="cs-label">Not Connected</div><div class="cs-val red">${fmtFull(d.failed)}</div></div>
       </div>
-      <div class="field">
-        <label>End Date</label>
-        <input type="date" class="cmp-end" value="${today}">
+      <div class="card-bar"><div class="card-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="card-bottom">
+        <div><div class="cb-label">Minutes</div><div class="cb-val">${fmtFull(Math.round(d.minutes))}</div></div>
+        <div><div class="cb-label">Appts</div><div class="cb-val">${d.appts}</div></div>
+        <div><div class="cb-label">Avg/Call</div><div class="cb-val">${d.avgPerCall}</div></div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="removeCompareEntry('compare-${compareCounter}')">Remove</button>
-    `;
-    container.appendChild(div);
-  }
+    </div>`;
+  }).join('');
+}
 
-  function removeCompareEntry(id) {
-    document.getElementById(id).remove();
-    // Re-number
-    const entries = document.getElementById('compareEntries').querySelectorAll('.compare-entry');
-    entries.forEach((e, i) => { e.querySelector('.entry-num').textContent = i + 1; });
-  }
+function renderTable(data) {
+  const tb = document.getElementById('tableBody');
+  tb.innerHTML = data.map((d, i) => {
+    const pct = d.rate || 0;
+    const dotColor = getDotColor(pct);
+    const barColor = getBarColor(pct);
+    return `<tr style="animation-delay:${i*30}ms">
+      <td><button class="remove-btn" onclick="removeWs('${d.id}')">&times;</button></td>
+      <td class="ws-name-cell"><span class="ws-dot" style="background:${dotColor}"></span>${d.name}</td>
+      <td class="num">${fmtFull(d.total)}</td>
+      <td class="num green">${fmtFull(d.connected)}</td>
+      <td class="num red">${fmtFull(d.failed)}</td>
+      <td><div class="rate-bar"><div class="rate-track"><div class="rate-fill" style="width:${pct}%;background:${barColor}"></div></div><span style="color:${barColor};font-weight:600;font-size:12px">${pct.toFixed(1)}%</span></div></td>
+      <td class="num">${fmtFull(Math.round(d.minutes))}</td>
+      <td class="num">${d.appts}</td>
+    </tr>`;
+  }).join('');
+}
 
-  async function apiCall(workspaceId, startDate, endDate) {
-    const url = `https://api.inspra.ai/workspace/${encodeURIComponent(workspaceId)}/stats?startDate=${startDate}&endDate=${endDate}`;
-    const res = await fetch(url, { headers: { 'x-api-key': 'insprapublickey' } });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `HTTP ${res.status}`);
-    }
-    return res.json();
-  }
+function setView(v) {
+  currentView = v;
+  document.getElementById('vGrid').classList.toggle('active', v === 'grid');
+  document.getElementById('vTable').classList.toggle('active', v === 'table');
+  document.getElementById('gridView').style.display = v === 'grid' ? '' : 'none';
+  document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
+}
 
-  function showError(msg) {
-    const toast = document.getElementById('errorToast');
-    toast.textContent = msg;
-    toast.classList.add('visible');
-    setTimeout(() => toast.classList.remove('visible'), 4000);
-  }
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = col === 'name'; }
+  renderView();
+}
 
-  function formatNum(n) {
-    if (n === undefined || n === null) return '-';
-    if (typeof n === 'number' && !Number.isInteger(n)) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    return n.toLocaleString();
-  }
-
-  const CARDS = [
-    { key: 'totalCalls',        label: 'Total Calls',    color: 'var(--accent)',  higherIsBetter: true },
-    { key: 'connectedCalls',    label: 'Connected',      color: 'var(--green)',   higherIsBetter: true },
-    { key: 'notConnectedCalls', label: 'Not Connected',  color: 'var(--red)',     higherIsBetter: false },
-    { key: 'connectedPercentage', label: 'Connected %',  color: 'var(--purple)',  higherIsBetter: true, suffix: '%' },
-    { key: 'consumedMinutes',   label: 'Consumed Min',   color: 'var(--amber)',   higherIsBetter: null },
-    { key: 'appointmentBooked', label: 'Appointments',   color: 'var(--blue)',    higherIsBetter: true },
-  ];
-
-  const arrowUp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>`;
-  const arrowDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>`;
-
-  function renderSingle(data, wsName) {
-    const dateLabel = data.startDate === data.endDate ? data.startDate : `${data.startDate} &rarr; ${data.endDate}`;
-    let html = `<div class="stats-section"><div class="section-label"><span class="ws-name">${wsName}</span> &mdash; ${dateLabel}</div><div class="stats-grid">`;
-    CARDS.forEach((c, i) => {
-      const val = data[c.key];
-      html += `
-        <div class="stat-card" style="transition-delay:${i * 60}ms">
-          <div class="icon-bar" style="background:${c.color}"></div>
-          <div class="stat-label">${c.label}</div>
-          <div class="stat-value">${formatNum(val)}</div>
-          ${c.suffix && val != null ? `<div class="stat-sub">${c.suffix === '%' ? 'percent' : c.suffix}</div>` : ''}
-        </div>`;
-    });
-    html += '</div></div>';
-    return html;
-  }
-
-  function renderMultiComparison(datasets) {
-    // datasets: [{wsName, startDate, endDate, data}, ...]
-    let html = `<div class="stats-section"><div class="section-label">Comparison across ${datasets.length} workspace${datasets.length > 1 ? 's' : ''}</div><div class="stats-grid">`;
-
-    CARDS.forEach((c, i) => {
-      html += `
-        <div class="stat-card" style="transition-delay:${i * 60}ms">
-          <div class="icon-bar" style="background:${c.color}"></div>
-          <div class="stat-label">${c.label}</div>
-          <div class="compare-values">`;
-
-      datasets.forEach((ds, j) => {
-        if (j > 0) html += `<div class="compare-divider"></div>`;
-        const shortName = ds.wsName.length > 14 ? ds.wsName.substring(0, 12) + '..' : ds.wsName;
-        html += `
-          <div class="compare-col">
-            <div class="period-tag" title="${ds.wsName} (${ds.startDate})">${shortName}</div>
-            <div class="val">${formatNum(ds.data[c.key])}</div>
-          </div>`;
-      });
-
-      html += `</div>`;
-
-      // Show deltas relative to the first dataset
-      if (datasets.length >= 2) {
-        html += `<div style="margin-top:8px">`;
-        const baseVal = datasets[0].data[c.key];
-        for (let j = 1; j < datasets.length; j++) {
-          const cmpVal = datasets[j].data[c.key];
-          if (baseVal != null && cmpVal != null) {
-            const delta = cmpVal - baseVal;
-            const pct = baseVal !== 0 ? ((delta / Math.abs(baseVal)) * 100) : (delta !== 0 ? 100 : 0);
-            let cls = 'neutral';
-            if (delta > 0) cls = c.higherIsBetter === false ? 'down' : 'up';
-            else if (delta < 0) cls = c.higherIsBetter === false ? 'up' : 'down';
-            html += `<div class="delta-badge ${cls}" title="vs ${datasets[0].wsName}">${delta > 0 ? arrowUp : delta < 0 ? arrowDown : ''}${delta > 0 ? '+' : ''}${formatNum(delta)} (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)</div>`;
-          }
-        }
-        html += `</div>`;
-      }
-
-      html += `</div>`;
-    });
-
-    html += '</div></div>';
-    return html;
-  }
-
-  async function fetchStats() {
-    const wid = document.getElementById('workspaceId').value;
-    const sd = document.getElementById('startDate').value;
-    const ed = document.getElementById('endDate').value;
-    if (!sd || !ed) { showError('Please fill in date fields'); return; }
-
-    const btn = document.getElementById('fetchBtn');
-    const spinner = document.getElementById('spinner');
-    const label = document.getElementById('fetchLabel');
-    btn.disabled = true;
-    spinner.style.display = 'block';
-    label.textContent = 'Loading';
-
-    try {
-      // ── All Live Clients mode ──
-      if (wid === '__ALL_LIVE__') {
-        const liveWorkspaces = WORKSPACES.filter(w => !w.paused);
-
-        const badge = document.getElementById('workspaceBadge');
-        document.getElementById('workspaceLabel').textContent = `All Live Clients (${liveWorkspaces.length})`;
-        badge.classList.add('visible');
-
-        const results = await Promise.allSettled(
-          liveWorkspaces.map(async ws => {
-            const data = await apiCall(ws.id, sd, ed);
-            return { wsName: data.workspaceName || ws.name, startDate: sd, endDate: ed, data };
-          })
-        );
-
-        const successResults = results
-          .filter(r => r.status === 'fulfilled')
-          .map(r => r.value);
-
-        const failedCount = results.filter(r => r.status === 'rejected').length;
-        if (failedCount > 0) showError(`${failedCount} workspace(s) failed to load`);
-
-        if (successResults.length === 0) {
-          showError('No workspace data could be loaded');
-          return;
-        }
-
-        const content = document.getElementById('content');
-        content.innerHTML = renderMultiComparison(successResults);
-        revealCards(content);
-        return;
-      }
-
-      // ── Single / Compare mode ──
-      const wsName = getWorkspaceName(wid);
-
-      const badge = document.getElementById('workspaceBadge');
-      document.getElementById('workspaceLabel').textContent = wsName;
-      badge.classList.add('visible');
-
-      if (compareMode) {
-        const entries = document.getElementById('compareEntries').querySelectorAll('.compare-entry');
-        if (entries.length === 0) { showError('Add at least one comparison workspace'); return; }
-
-        const requests = [{ wid, sd, ed, wsName }];
-        entries.forEach(entry => {
-          const cWid = entry.querySelector('.cmp-workspace').value;
-          const cSd = entry.querySelector('.cmp-start').value;
-          const cEd = entry.querySelector('.cmp-end').value;
-          if (cWid && cSd && cEd) {
-            requests.push({ wid: cWid, sd: cSd, ed: cEd, wsName: getWorkspaceName(cWid) });
-          }
-        });
-
-        const results = await Promise.all(
-          requests.map(async r => {
-            const data = await apiCall(r.wid, r.sd, r.ed);
-            return { wsName: data.workspaceName || r.wsName, startDate: r.sd, endDate: r.ed, data };
-          })
-        );
-
-        const content = document.getElementById('content');
-        content.innerHTML = renderMultiComparison(results);
-        revealCards(content);
-
-      } else {
-        const primary = await apiCall(wid, sd, ed);
-        primary.startDate = sd;
-        primary.endDate = ed;
-
-        const content = document.getElementById('content');
-        content.innerHTML = renderSingle(primary, primary.workspaceName || wsName);
-        revealCards(content);
-      }
-
-    } catch (e) {
-      showError(e.message);
-    } finally {
-      btn.disabled = false;
-      spinner.style.display = 'none';
-      label.textContent = 'Fetch';
-    }
-  }
-
-  function revealCards(container) {
-    requestAnimationFrame(() => {
-      container.querySelectorAll('.stat-card').forEach((card, i) => {
-        setTimeout(() => card.classList.add('visible'), i * 80);
-      });
-    });
-  }
+function applyFilter() {
+  filterText = document.getElementById('filterInput').value.toLowerCase();
+  renderView();
+}
 </script>
 </body>
 </html>
