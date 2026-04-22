@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Client Connectivity Dashboard</title>
+<script>
+  (function(){
+    try { var t = localStorage.getItem('wsDash.theme'); if (t === 'light') document.documentElement.setAttribute('data-theme','light'); } catch(e){}
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -413,6 +418,10 @@ const AUTH = {
   users: [
     { username: 'admin', password: 'inspra2026' },
     { username: 'dhruv@genius365.ai', password: 'dhruv@123' },
+    { username: 'vishalli@genius365.ai', password: 'vishalli@123' },
+    { username: 'rimjhim@genius365.ai', password: 'rimjhim@123' },
+    { username: 'narayan@inspra.ai', password: 'narayan@123' },
+    { username: 'sujan@genius365.ai', password: 'sujan@123' },
   ],
   storageKey: 'wsDash.authUser',
 };
