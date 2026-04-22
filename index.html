@@ -127,6 +127,8 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
 .ws-dropdown label:hover { background:var(--bg3); }
 .ws-dropdown input[type="checkbox"] { accent-color:var(--purple); width:16px; height:16px; cursor:pointer; }
 .ws-dropdown .paused-tag { font-size:10px; color:var(--amber); margin-left:4px; }
+.ws-dropdown .ws-all { font-weight:600; }
+.ws-dropdown .ws-divider { height:1px; background:var(--border); margin:4px 0; }
 
 /* ── Summary Cards ── */
 .summary { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
@@ -176,6 +178,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
 .card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
 .card-info .card-name { font-size:14px; font-weight:600; }
 .card-info .card-sub { font-size:12px; color:var(--text3); margin-top:2px; }
+.card-info .card-sub strong { color:var(--text); font-weight:700; }
 
 /* Donut chart (SVG) */
 .donut-wrap { width:56px; height:56px; position:relative; }
@@ -423,16 +426,16 @@ html[data-theme="light"] .theme-toggle .moon-icon { display:block; }
   <div class="toolbar" id="toolbar" style="display:none">
     <input type="text" class="filter-input" id="filterInput" placeholder="Filter workspaces..." oninput="applyFilter()">
     <div class="view-toggle">
-      <button class="active" id="vGrid" onclick="setView('grid')">Grid</button>
-      <button id="vTable" onclick="setView('table')">Table</button>
+      <button id="vGrid" onclick="setView('grid')">Grid</button>
+      <button class="active" id="vTable" onclick="setView('table')">Table</button>
     </div>
   </div>
 
   <!-- Grid -->
-  <div class="grid" id="gridView"></div>
+  <div class="grid" id="gridView" style="display:none"></div>
 
   <!-- Table -->
-  <div class="tbl-wrap" id="tableView" style="display:none">
+  <div class="tbl-wrap" id="tableView">
     <table class="tbl">
       <thead>
         <tr>
@@ -536,10 +539,9 @@ const WORKSPACES = [
   { id:'OvLqMqd548pqSpNCyUqi', name:'SMSFLC' },
 ];
 
-const DEFAULT_WS_ID = 'Zqd89f1hVxHSipRTEn5C'; // Arise Solar
-let selectedWs = new Set([DEFAULT_WS_ID]);
+let selectedWs = new Set(WORKSPACES.filter(w => !w.paused).map(w => w.id));
 let wsData = [];
-let currentView = 'grid';
+let currentView = 'table';
 let sortCol = 'total';
 let sortAsc = false;
 let filterText = '';
@@ -552,13 +554,30 @@ document.getElementById('endDate').value = today;
 // Build workspace dropdown
 (function buildDropdown() {
   const dd = document.getElementById('wsDropdown');
-  dd.innerHTML = WORKSPACES.map(w => `
-    <label>
-      <input type="checkbox" value="${w.id}" ${selectedWs.has(w.id) ? 'checked' : ''} onchange="toggleWs('${w.id}', this.checked)">
-      ${w.name}${w.paused ? '<span class="paused-tag">paused</span>' : ''}
+  dd.innerHTML = `
+    <label class="ws-all">
+      <input type="checkbox" id="wsSelectAll" onchange="toggleAllWs(this.checked)">
+      Select all
     </label>
-  `).join('');
+    <div class="ws-divider"></div>
+    ${WORKSPACES.map(w => `
+      <label>
+        <input type="checkbox" class="ws-item" value="${w.id}" ${selectedWs.has(w.id) ? 'checked' : ''} onchange="toggleWs('${w.id}', this.checked)">
+        ${w.name}${w.paused ? '<span class="paused-tag">paused</span>' : ''}
+      </label>
+    `).join('')}
+  `;
+  syncSelectAll();
 })();
+
+function syncSelectAll() {
+  const all = document.getElementById('wsSelectAll');
+  if (!all) return;
+  const total = WORKSPACES.length;
+  const n = selectedWs.size;
+  all.checked = n === total;
+  all.indeterminate = n > 0 && n < total;
+}
 
 function toggleWsDropdown() {
   document.getElementById('wsDropdown').classList.toggle('open');
@@ -569,6 +588,14 @@ document.addEventListener('click', e => {
 
 function toggleWs(id, checked) {
   if (checked) selectedWs.add(id); else selectedWs.delete(id);
+  syncSelectAll();
+}
+
+function toggleAllWs(checked) {
+  if (checked) WORKSPACES.forEach(w => selectedWs.add(w.id));
+  else selectedWs.clear();
+  document.querySelectorAll('.ws-dropdown .ws-item').forEach(cb => { cb.checked = checked; });
+  syncSelectAll();
 }
 
 function setPreset(p) {
@@ -722,7 +749,7 @@ function renderGrid(data) {
       <div class="card-top">
         <div class="card-info">
           <div class="card-name">${d.name}</div>
-          <div class="card-sub">${fmtFull(d.total)} total calls</div>
+          <div class="card-sub"><strong>${fmtFull(d.total)}</strong> total calls</div>
         </div>
         <div class="donut-wrap">
           <svg viewBox="0 0 50 50"><circle class="donut-bg" cx="25" cy="25" r="22"/><circle class="donut-fg" cx="25" cy="25" r="22" stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg>
