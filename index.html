@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Client Connectivity Dashboard</title>
 <script>
   (function(){
-    try { var t = localStorage.getItem('wsDash.theme'); if (t === 'light') document.documentElement.setAttribute('data-theme','light'); } catch(e){}
+    try { var t = localStorage.getItem('wsDash.theme'); if (t === 'dark') document.documentElement.removeAttribute('data-theme'); } catch(e){}
   })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -34,7 +34,33 @@
   --mono: 'JetBrains Mono', monospace;
 }
 
-body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; }
+html[data-theme="light"] {
+  --bg: #f7f8fb;
+  --bg2: #ffffff;
+  --bg3: #eef0f5;
+  --bg4: #e1e4ec;
+  --border: #dfe2ea;
+  --text: #1a1b23;
+  --text2: #5d5f73;
+  --text3: #9496a8;
+  --green: #16a34a;
+  --green-dim: rgba(22,163,74,0.1);
+  --red: #dc2626;
+  --red-dim: rgba(220,38,38,0.1);
+  --purple: #7c5cfc;
+  --purple-dim: rgba(124,92,252,0.12);
+  --amber: #d97706;
+  --blue: #2563eb;
+}
+
+html[data-theme="light"] .ctrls input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(.3); }
+html[data-theme="light"] .loading-overlay { background:rgba(255,255,255,.6); }
+html[data-theme="light"] .ws-dropdown { box-shadow:0 12px 40px rgba(16,24,40,.08); }
+html[data-theme="light"] .login-card { box-shadow:0 20px 60px rgba(16,24,40,.12); }
+html[data-theme="light"] .presets button.active,
+html[data-theme="light"] .view-toggle button.active { color:var(--purple); }
+
+body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; transition:background .2s, color .2s; }
 
 .app { max-width:1100px; margin:0 auto; padding:28px 32px 60px; }
 
@@ -294,6 +320,20 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
   transition:all .15s;
 }
 .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+/* ── Theme Toggle ── */
+.theme-toggle {
+  background:transparent; border:1px solid var(--border); color:var(--text2);
+  border-radius:8px; width:32px; height:32px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  margin-left:10px; transition:all .15s; padding:0;
+}
+.theme-toggle:hover { border-color:var(--text3); color:var(--text); }
+.theme-toggle svg { width:16px; height:16px; }
+.theme-toggle .sun-icon { display:block; }
+.theme-toggle .moon-icon { display:none; }
+html[data-theme="light"] .theme-toggle .sun-icon { display:none; }
+html[data-theme="light"] .theme-toggle .moon-icon { display:block; }
 </style>
 </head>
 <body>
@@ -338,6 +378,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
     <div style="text-align:right">
       <div style="display:flex; align-items:center; justify-content:flex-end;">
         <div class="hdr-live"><span class="dot"></span> Live</div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
         <button class="logout-btn" id="logoutBtn" onclick="logout()">Log out</button>
       </div>
       <div id="lastFetch" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
@@ -399,7 +443,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
           <th class="num" onclick="sortTable('failed')">Not Connected</th>
           <th onclick="sortTable('rate')">Rate</th>
           <th class="num" onclick="sortTable('minutes')">Minutes</th>
-          <th class="num" onclick="sortTable('appts')">Appts</th>
+          <th class="num" onclick="sortTable('success')">Successful</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -459,6 +503,7 @@ document.getElementById('loginForm').addEventListener('submit', e => {
     err.textContent = '';
     document.getElementById('loginPass').value = '';
     showApp();
+    fetchAll();
   } else {
     err.textContent = 'Invalid username or password';
     document.getElementById('loginPass').value = '';
@@ -467,6 +512,15 @@ document.getElementById('loginForm').addEventListener('submit', e => {
 });
 
 if (isAuthed()) showApp(); else showLogin();
+
+// ── Theme toggle ──
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const next = cur === 'light' ? 'dark' : 'light';
+  if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('wsDash.theme', next); } catch(e){}
+}
 
 const WORKSPACES = [
   { id:'Zqd89f1hVxHSipRTEn5C', name:'Arise Solar' },
@@ -482,7 +536,8 @@ const WORKSPACES = [
   { id:'OvLqMqd548pqSpNCyUqi', name:'SMSFLC' },
 ];
 
-let selectedWs = new Set(WORKSPACES.filter(w => !w.paused).map(w => w.id));
+const DEFAULT_WS_ID = 'Zqd89f1hVxHSipRTEn5C'; // Arise Solar
+let selectedWs = new Set([DEFAULT_WS_ID]);
 let wsData = [];
 let currentView = 'grid';
 let sortCol = 'total';
@@ -589,7 +644,7 @@ async function fetchAll() {
           id, name: data.workspaceName || ws.name,
           total: data.totalCalls, connected: data.connectedCalls,
           failed: data.notConnectedCalls, rate: data.connectedPercentage,
-          minutes: data.consumedMinutes, appts: data.appointmentBooked, avgPerCall
+          minutes: data.consumedMinutes, success: data.successfulConnected, avgPerCall
         };
       })
     );
@@ -613,8 +668,8 @@ async function fetchAll() {
 function renderSummary() {
   const s = wsData.reduce((a, d) => {
     a.total += d.total; a.conn += d.connected; a.fail += d.failed;
-    a.min += d.minutes; a.appts += d.appts; return a;
-  }, { total:0, conn:0, fail:0, min:0, appts:0 });
+    a.min += d.minutes; a.success += d.success; return a;
+  }, { total:0, conn:0, fail:0, min:0, success:0 });
   const avgRate = s.total > 0 ? ((s.conn / s.total) * 100).toFixed(1) : '0.0';
   const hrs = (s.min / 60).toFixed(1);
 
@@ -624,7 +679,7 @@ function renderSummary() {
     <div class="sum-card"><div class="sc-icon">❌</div><div><div class="sc-label">Not Connected</div><div class="sc-val">${fmt(s.fail)}</div></div></div>
     <div class="sum-card"><div class="sc-icon">📊</div><div><div class="sc-label">Avg Connect</div><div class="sc-val">${avgRate}%</div></div></div>
     <div class="sum-card"><div class="sc-icon">⏱</div><div><div class="sc-label">Minutes</div><div class="sc-val">${hrs}h</div></div></div>
-    <div class="sum-card"><div class="sc-icon">📅</div><div><div class="sc-label">Appointments</div><div class="sc-val">${s.appts}</div></div></div>
+    <div class="sum-card"><div class="sc-icon">🎯</div><div><div class="sc-label">Successful</div><div class="sc-val">${s.success}</div></div></div>
   `;
 }
 
@@ -681,7 +736,7 @@ function renderGrid(data) {
       <div class="card-bar"><div class="card-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
       <div class="card-bottom">
         <div><div class="cb-label">Minutes</div><div class="cb-val">${fmtFull(Math.round(d.minutes))}</div></div>
-        <div><div class="cb-label">Appts</div><div class="cb-val">${d.appts}</div></div>
+        <div><div class="cb-label">Success</div><div class="cb-val">${d.success}</div></div>
         <div><div class="cb-label">Avg/Call</div><div class="cb-val">${d.avgPerCall}</div></div>
       </div>
     </div>`;
@@ -702,7 +757,7 @@ function renderTable(data) {
       <td class="num red">${fmtFull(d.failed)}</td>
       <td><div class="rate-bar"><div class="rate-track"><div class="rate-fill" style="width:${pct}%;background:${barColor}"></div></div><span style="color:${barColor};font-weight:600;font-size:12px">${pct.toFixed(1)}%</span></div></td>
       <td class="num">${fmtFull(Math.round(d.minutes))}</td>
-      <td class="num">${d.appts}</td>
+      <td class="num">${d.success}</td>
     </tr>`;
   }).join('');
 }
@@ -725,6 +780,8 @@ function applyFilter() {
   filterText = document.getElementById('filterInput').value.toLowerCase();
   renderView();
 }
+
+if (isAuthed()) fetchAll();
 </script>
 </body>
 </html>
