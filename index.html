@@ -238,6 +238,14 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); min-hei
 .tbl .remove-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; padding:2px 6px; }
 .tbl .remove-btn:hover { color:var(--red); }
 
+.agent-tag {
+  display:inline-block; padding:2px 7px; border-radius:5px;
+  background:var(--purple-dim); color:var(--purple);
+  font-size:10px; font-weight:600; letter-spacing:.02em;
+  white-space:nowrap; vertical-align:middle; margin-left:6px;
+}
+html[data-theme="light"] .agent-tag { color:var(--purple); }
+
 /* ── States ── */
 .empty-state { text-align:center; padding:60px 20px; color:var(--text3); font-size:14px; }
 .loading-overlay {
@@ -649,6 +657,18 @@ function getDotColor(pct) {
   return 'var(--text3)';
 }
 
+function mapAgentType(t) {
+  if (t === 'User') return 'Elk';
+  if (t === 'External') return 'Vapi/Retell';
+  return t;
+}
+
+function getAgentLabel(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return '-';
+  const unique = [...new Set(arr.map(mapAgentType).filter(Boolean))];
+  return unique.length ? unique.join(', ') : '-';
+}
+
 async function fetchAll() {
   const sd = document.getElementById('startDate').value;
   const ed = document.getElementById('endDate').value;
@@ -671,7 +691,8 @@ async function fetchAll() {
           id, name: data.workspaceName || ws.name,
           total: data.totalCalls, connected: data.connectedCalls,
           failed: data.notConnectedCalls, rate: data.connectedPercentage,
-          minutes: data.consumedMinutes, success: data.successfulConnected, avgPerCall
+          minutes: data.consumedMinutes, success: data.successfulConnected, avgPerCall,
+          agent: getAgentLabel(data.agentType)
         };
       })
     );
@@ -748,7 +769,7 @@ function renderGrid(data) {
       <button class="card-close" onclick="removeWs('${d.id}')">&times;</button>
       <div class="card-top">
         <div class="card-info">
-          <div class="card-name">${d.name}</div>
+          <div class="card-name">${d.name}${d.agent && d.agent !== '-' ? ` <span class="agent-tag">${d.agent}</span>` : ''}</div>
           <div class="card-sub"><strong>${fmtFull(d.total)}</strong> total calls</div>
         </div>
         <div class="donut-wrap">
@@ -778,7 +799,7 @@ function renderTable(data) {
     const barColor = getBarColor(pct);
     return `<tr style="animation-delay:${i*30}ms">
       <td><button class="remove-btn" onclick="removeWs('${d.id}')">&times;</button></td>
-      <td class="ws-name-cell"><span class="ws-dot" style="background:${dotColor}"></span>${d.name}</td>
+      <td class="ws-name-cell"><span class="ws-dot" style="background:${dotColor}"></span>${d.name}${d.agent && d.agent !== '-' ? ` <span class="agent-tag">${d.agent}</span>` : ''}</td>
       <td class="num">${fmtFull(d.total)}</td>
       <td class="num green">${fmtFull(d.connected)}</td>
       <td class="num red">${fmtFull(d.failed)}</td>
